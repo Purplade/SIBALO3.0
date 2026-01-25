@@ -19,10 +19,18 @@ class AuthController extends Controller
     public function proseslogout(Request $request) {
         if(Auth::guard('pegawai')->check()) {
             Auth::guard('pegawai')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            // Hanya invalidate session jika tidak ada guard lain yang aktif
+            // Ini memungkinkan multi-guard (admin dan pegawai bisa login bersamaan)
+            if (!Auth::guard('user')->check()) {
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+            } else {
+                // Jika masih ada session admin, hanya regenerate token untuk keamanan
+                $request->session()->regenerateToken();
+            }
             return redirect('/login');
         }
+        return redirect('/login');
     }
 
     public function prosesloginadmin(Request $request){
@@ -38,9 +46,17 @@ class AuthController extends Controller
     public function proseslogoutadmin(){
         if(Auth::guard('user')->check()) {
             Auth::guard('user')->logout();
-            request()->session()->invalidate();
-            request()->session()->regenerateToken();
+            // Hanya invalidate session jika tidak ada guard lain yang aktif
+            // Ini memungkinkan multi-guard (admin dan pegawai bisa login bersamaan)
+            if (!Auth::guard('pegawai')->check()) {
+                request()->session()->invalidate();
+                request()->session()->regenerateToken();
+            } else {
+                // Jika masih ada session pegawai, hanya regenerate token untuk keamanan
+                request()->session()->regenerateToken();
+            }
             return redirect('/panel');
         }
+        return redirect('/panel');
     }
 }

@@ -30,10 +30,7 @@ Route::middleware('guest:pegawai')->group(function () {
         if (Auth::guard('pegawai')->check()) {
             return redirect()->route('home');
         }
-        // Jika login sebagai admin, arahkan ke dashboard admin
-        if (Auth::guard('user')->check()) {
-            return redirect('/dashboard');
-        }
+        // Biarkan akses halaman login meskipun sudah login sebagai admin (multi-guard support)
         return view('auth.login');
     })->name('login');
     
@@ -58,7 +55,7 @@ Route::middleware(['auth:pegawai'])->group(function () {
     Route::post('/absensi/store', [AbsensiController::class, 'store']);
 
     // ROUTE UNTUK PROFIL
-    Route::get('/editprofile', [AbsensiController::class, 'editprofile']);
+    Route::get('/profil', [AbsensiController::class, 'profil']);
     Route::post('/absensi/{nik}/updateprofile', [AbsensiController::class, 'updateprofile']);
 
     // ROUTE HISTORI ABSENSI
@@ -84,10 +81,7 @@ Route::middleware('guest:user')->group(function () {
         if (Auth::guard('user')->check()) {
             return redirect('/dashboard');
         }
-        // Jika login sebagai pegawai, arahkan ke home pegawai
-        if (Auth::guard('pegawai')->check()) {
-            return redirect()->route('home');
-        }
+        // Biarkan akses halaman login admin meskipun sudah login sebagai pegawai (multi-guard support)
         return view('auth.loginadmin');
     });
 
@@ -126,6 +120,7 @@ Route::middleware(['auth:user'])->group(function () {
 
     // ROUTE MONITORING ABSENSI PEGAWAI
     Route::get('/monitoring', [DashboardController::class, 'monitoring']);
+    Route::get('/monitoring/anomali', [DashboardController::class, 'anomali']);
     Route::post('/getabsensi', [DashboardController::class, 'getabsensi']);
     Route::get('/absensi/{id}/hapusjamout', [DashboardController::class, 'hapusjamout']);
     

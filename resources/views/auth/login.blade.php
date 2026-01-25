@@ -8,13 +8,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>SIBALO</title>
     <meta name="description" content="Mobilekit HTML Mobile UI Kit">
     <meta name="keywords" content="bootstrap 4, mobile template, cordova, phonegap, mobile, html" />
     <link rel="icon" type="image/png" href="{{ asset('assets/img/favicon.png') }}" sizes="32x32">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/icon/192x192.png') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-    <link rel="manifest" href="__manifest.json">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
 </head>
 
 <body class="bg-white">
@@ -39,27 +40,31 @@
                 <h1>SIBALO</h1>
                 <h4>Silahkan Login</h4>
             </div>
-            <div class="section mt-1 mb-5">
+            <div class="section mt-3 mb-5">
                 <form action="/proseslogin" method="POST">
                     @csrf
-                    <div class="form-group boxed">
-                        <div class="input-wrapper">
-                            <input type="text" name="nik" class="form-control" id="nik" placeholder="NIP">
-                            <i class="clear-input">
-                                <ion-icon name="close-circle"></ion-icon>
-                            </i>
+                    <div class="row justify-content-center">
+                        <div class="col-10 col-md-6 col-lg-6">
+                            <div class="form-group boxed">
+                                <div class="input-wrapper">
+                                    <input type="text" name="nik" class="form-control" id="nik" placeholder="NIP">
+                                    <i class="clear-input">
+                                        <ion-icon name="close-circle"></ion-icon>
+                                    </i>
+                                </div>
+                            </div>
+        
+                            <div class="form-group boxed">
+                                <div class="input-wrapper">
+                                    <input type="password" name="password" class="form-control" id="password" placeholder="Password">
+                                    <i class="clear-input">
+                                        <ion-icon name="close-circle"></ion-icon>
+                                    </i>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="form-group boxed">
-                        <div class="input-wrapper">
-                            <input type="password" name="password" class="form-control" id="password" placeholder="Password">
-                            <i class="clear-input">
-                                <ion-icon name="close-circle"></ion-icon>
-                            </i>
-                        </div>
-                    </div>
-
+                    
                     @php
                     $messagewarning = Session::get('warning');
                     @endphp
@@ -69,10 +74,11 @@
                         {{ $messagewarning }}
                     </div>
                     @endif
-                    <div class="form-button-group">
-                        <button type="submit" class="btn btn-primary btn-block btn-lg">Log in</button>
+                    <div class="form-group boxed">
+                        <div class="input-wrapper">
+                            <button type="submit" class="btn btn-primary w-10 btn-lg">Log in</button>
+                        </div>
                     </div>
-
                 </form>
             </div>
         </div>
@@ -97,6 +103,8 @@
     <script src="{{ asset('assets/js/plugins/jquery-circle-progress/circle-progress.min.js') }}"></script>
     <!-- Base Js File -->
     <script src="{{ asset('assets/js/base.js') }}"></script>
+    <script src="{{ asset('offline/idb.js') }}" defer></script>
+    <script src="{{ asset('offline/offline-sync.js') }}" defer></script>
 
 
 </body>

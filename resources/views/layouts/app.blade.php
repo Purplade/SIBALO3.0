@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>SIBALO</title>
     <meta name="description" content="Mobilekit HTML Mobile UI Kit">
     <meta name="keywords" content="bootstrap 4, mobile template, cordova, phonegap, mobile, html" />
@@ -18,7 +19,7 @@
     <link rel="icon" type="image/png" href="{{ asset('assets/img/favicon.png') }}" sizes="32x32">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/icon/192x192.png') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-    <link rel="manifest" href="__manifest.json">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
 
     {{-- css logout --}}
     <style>
@@ -120,7 +121,7 @@
                     <div class="list-menu">
                         <div class="item-menu text-center">
                             <div class="menu-icon">
-                                <a href="/editprofile" class="green" style="font-size: 40px;">
+                                <a href="/profil" class="green" style="font-size: 40px;">
                                     <ion-icon name="person-sharp"></ion-icon>
                                 </a>
                             </div>
@@ -176,7 +177,7 @@
                                             @endphp
                                             <img src="{{ url($path) }}" alt="" class="imaged w48">
                                         @else
-                                            <ion-icon name="camera"></ion-icon>
+                                            <ion-icon name="image"></ion-icon>
                                         @endif
                                     </div>
                                     <div class="presencedetail">
@@ -198,7 +199,7 @@
                                             @endphp
                                             <img src="{{ url($path) }}" alt="" class="imaged w48">
                                         @else
-                                            <ion-icon name="camera"></ion-icon>
+                                            <ion-icon name="image"></ion-icon>
                                         @endif
                                     </div>
                                     <div class="presencedetail">
@@ -379,6 +380,8 @@
     <script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
     <!-- Base Js File -->
     <script src="{{ asset('assets/js/base.js') }}"></script>
+    <script src="{{ asset('offline/idb.js') }}" defer></script>
+    <script src="{{ asset('offline/offline-sync.js') }}" defer></script>
 
     <!-- Detail Absensi Modal -->
     <div class="modal fade" id="modal-detail-histori" tabindex="-1" role="dialog" aria-hidden="true">

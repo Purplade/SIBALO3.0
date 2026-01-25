@@ -8,6 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>SIBALO</title>
     <meta name="description" content="Mobilekit HTML Mobile UI Kit">
     <meta name="keywords" content="bootstrap 4, mobile template, cordova, phonegap, mobile, html" />
@@ -22,7 +23,7 @@
         }
     </style>
     {{-- CSS TANGGAL IZIN --}}
-    <link rel="manifest" href="__manifest.json">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
 </head>
 
 <body>
@@ -65,6 +66,8 @@
 
     {{-- SCRIPT NOTIFIKASI SWEET ALERT --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('offline/idb.js') }}"></script>
+    <script src="{{ asset('offline/offline-sync.js') }}"></script>
     
     <script>
         var currYear = (new Date()).getFullYear();
@@ -108,7 +111,19 @@
 
             cekTotalIzinBulanIni();
 
-            $("#formizin").submit(function() {
+            $("#formizin").submit(function(e) {
+                // Audit fields for offline-first + idempotency
+                try {
+                    var cu = document.getElementById('client_uuid');
+                    var ca = document.getElementById('captured_at');
+                    if (cu && !cu.value) {
+                        cu.value = (window.SibaloIDB && SibaloIDB.uid) ? SibaloIDB.uid() : ('q_' + Date.now());
+                    }
+                    if (ca && !ca.value) {
+                        ca.value = new Date().toISOString();
+                    }
+                } catch (err) {}
+
                 var dari = $("#dari").val();
                 var sampai = $("#sampai").val();
                 var status = $("#status").val();
@@ -149,6 +164,16 @@
                     });
                     return false;
                 }
+
+                // Offline mode: queue request and auto-sync later
+                if (!navigator.onLine && window.SibaloOffline && typeof window.SibaloOffline.enqueueForm === 'function') {
+                    e.preventDefault();
+                    window.SibaloOffline.enqueueForm(this).then(function(){
+                        // redirect to list page (will show current list; queued items will sync later)
+                        setTimeout(function(){ window.location.href = '/absensi/izin'; }, 800);
+                    });
+                    return false;
+                }
             })
         });
     </script>
@@ -159,6 +184,8 @@
         <div class="col">
             <form method="POST" action="/absensi/storeizin" id="formizin" enctype="multipart/form-data">
                 @csrf
+                <input type="hidden" name="client_uuid" id="client_uuid">
+                <input type="hidden" name="captured_at" id="captured_at">
                 <div class="form-group">
                     <input type="text" id="dari" name="dari" class="form-control datepicker"
                         placeholder="Dari Tanggal (yyyy-mm-dd)">

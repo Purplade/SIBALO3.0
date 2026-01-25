@@ -87,7 +87,7 @@
                 <td>
                     <span id="title">
                         <h3 style="margin: 10px 3px 30px 0px">
-                            LAPORAN ABSENSI PEGAWAI PERIODE {{ strtoupper($namabulan[$bulan-1]) }} {{ $tahun }}<br>
+                            LAPORAN ABSENSI PEGAWAI PERIODE {{ strtoupper($namabulan[$bulan ]) }} {{ $tahun }}<br>
                             SMP NEGERI 3 KOTA KOTAMOBAGU
                         </h3>
                     </span>

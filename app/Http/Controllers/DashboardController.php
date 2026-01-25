@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
@@ -30,6 +31,82 @@ class DashboardController extends Controller
     public function monitoring()
     {
         return view('dbmonitoring.monitoring');
+    }
+
+    public function anomali(Request $request)
+    {
+        $today = Carbon::today();
+        $dari = $request->input('dari', $today->copy()->subDays(7)->toDateString());
+        $sampai = $request->input('sampai', $today->toDateString());
+        $nik = trim((string) $request->input('nik', ''));
+        $flag = trim((string) $request->input('flag', ''));
+        $showAll = $request->boolean('show_all', false);
+
+        $flags = [
+            'delayed_sync' => 'Upload terlambat',
+            'client_time_in_future' => 'Jam device tidak wajar',
+        ];
+
+        $absensiQ = DB::table('absensi_events as e')
+            ->leftJoin('pegawai as p', 'e.nik', '=', 'p.nik')
+            ->select(
+                'e.*',
+                'p.nama_lengkap',
+                'p.jabatan'
+            )
+            ->orderByDesc('e.received_at');
+
+        $izinQ = DB::table('izin_events as e')
+            ->leftJoin('pegawai as p', 'e.nik', '=', 'p.nik')
+            ->select(
+                'e.*',
+                'p.nama_lengkap',
+                'p.jabatan'
+            )
+            ->orderByDesc('e.received_at');
+
+        // Date filters (based on received_at = server time)
+        if (!empty($dari) && !empty($sampai)) {
+            $absensiQ->whereBetween(DB::raw('DATE(e.received_at)'), [$dari, $sampai]);
+            $izinQ->whereBetween(DB::raw('DATE(e.received_at)'), [$dari, $sampai]);
+        } elseif (!empty($dari)) {
+            $absensiQ->whereDate('e.received_at', $dari);
+            $izinQ->whereDate('e.received_at', $dari);
+        }
+
+        if ($nik !== '') {
+            $absensiQ->where('e.nik', $nik);
+            $izinQ->where('e.nik', $nik);
+        }
+
+        if (!$showAll) {
+            $absensiQ->whereNotNull('e.anomaly_flags');
+            $izinQ->whereNotNull('e.anomaly_flags');
+        }
+
+        if ($flag !== '' && array_key_exists($flag, $flags)) {
+            $absensiQ->whereJsonContains('e.anomaly_flags', $flag);
+            $izinQ->whereJsonContains('e.anomaly_flags', $flag);
+        }
+
+        $absensiEvents = $absensiQ->simplePaginate(20)->appends($request->all());
+        $izinEvents = $izinQ->simplePaginate(20)->appends($request->all());
+
+        $countAbsensi = (clone $absensiQ)->count();
+        $countIzin = (clone $izinQ)->count();
+
+        return view('dbmonitoring.anomali', compact(
+            'dari',
+            'sampai',
+            'nik',
+            'flag',
+            'showAll',
+            'flags',
+            'absensiEvents',
+            'izinEvents',
+            'countAbsensi',
+            'countIzin'
+        ));
     }
 
     public function getabsensi(Request $request)

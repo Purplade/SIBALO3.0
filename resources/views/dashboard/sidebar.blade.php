@@ -320,6 +320,24 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ request()->is(['monitoring/anomali']) ? 'active' : '' }}" href="/monitoring/anomali">
+                        <span class="nav-link-icon d-md-none d-lg-inline-block">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                class="icon icon-tabler icons-tabler-outline icon-tabler-alert-triangle">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <path d="M12 9v4" />
+                                <path d="M10.363 3.591l-8.106 14.035a2 2 0 0 0 1.71 2.974h16.066a2 2 0 0 0 1.71 -2.974l-8.106 -14.035a2 2 0 0 0 -3.274 0z" />
+                                <path d="M12 16h.01" />
+                            </svg>
+                        </span>
+                        <span class="nav-link-title">
+                            Audit Anomali
+                        </span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ request()->is(['izinsakit']) ? 'active' : '' }}" href="/izinsakit">
                         <span
                             class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler-icons.io/i/home -->

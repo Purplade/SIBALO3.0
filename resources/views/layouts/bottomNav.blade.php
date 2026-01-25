@@ -26,10 +26,10 @@
             <strong>Izin</strong>
         </div>
     </a>
-    <a href="/editprofile" class="item {{ request()->is('editprofile') ? 'active' : '' }}">
+    <a href="/profil" class="item {{ request()->is('profil') ? 'active' : '' }}">
         <div class="col">
             <ion-icon name="people-outline" role="img" class="md hydrated" aria-label="people outline"></ion-icon>
-            <strong>Profile</strong>
+            <strong>Profil</strong>
         </div>
     </a>
 </div>

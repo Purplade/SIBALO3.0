@@ -8,13 +8,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>SIBALO</title>
     <meta name="description" content="Mobilekit HTML Mobile UI Kit">
     <meta name="keywords" content="bootstrap 4, mobile template, cordova, phonegap, mobile, html" />
     <link rel="icon" type="image/png" href="{{ asset('assets/img/favicon.png') }}" sizes="32x32">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/icon/192x192.png') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-    <link rel="manifest" href="__manifest.json">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
 </head>
 
 <body>
@@ -136,6 +137,8 @@
     <script src="{{ asset('assets/js/plugins/jquery-circle-progress/circle-progress.min.js') }}"></script>
     <!-- Base Js File -->
     <script src="{{ asset('assets/js/base.js') }}"></script>
+    <script src="{{ asset('offline/idb.js') }}"></script>
+    <script src="{{ asset('offline/offline-sync.js') }}"></script>
     {{-- SCRIPT NOTIF --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- ///////////// SCRIPT KAMERA ////////////////////  -->
@@ -267,41 +270,81 @@
                 image = uri;
             });
             var lokasi = $("#lokasi").val();
-            $.ajax({
-                type: 'POST',
-                url: '/absensi/store',
-                data: {
-                    _token: "{{ csrf_token() }}",
-                    image: image,
-                    lokasi: lokasi
-                },
-                cache: false,
-                success: function(respond) {
-                    var status = respond.split("|");
-                    if (status[0] == "success") {
-                        if(status[2]=="in") {
+            if (window.SibaloOffline && typeof window.SibaloOffline.submitAbsensi === 'function') {
+                window.SibaloOffline.submitAbsensi({ image: image, lokasi: lokasi }).then(function(result){
+                    if (result && result.queued) {
+                        // queued offline: back to home
+                        setTimeout(function(){ location.href = '/home'; }, 1200);
+                        return;
+                    }
+                    if (result && result.ok && result.json) {
+                        if(result.json.tag==="in") {
                             notifikasi_in.play();
                         }else{
                             notifikasi_out.play();
                         }
                         Swal.fire({
                             title: 'Berhasil !',
-                            text: status[1],
+                            text: result.json.message,
                             icon: 'success'
                         })
                         setTimeout("location.href='/home'", 3000);
-                    } else {
-                        if(status[2]=="radius") {
-                            radius_sound.play();
-                        }
-                        Swal.fire({
-                            title: 'Error!',
-                            text: status[1] || 'Maaf Gagal Absen,silahkan hubungi IT',
-                            icon: 'error'
-                        })
+                        return;
                     }
-                }
-            });
+                    // application error
+                    var msg = (result && result.json && result.json.message) ? result.json.message : 'Maaf Gagal Absen,silahkan hubungi IT';
+                    if (result && result.json && result.json.tag === "radius") {
+                        radius_sound.play();
+                    }
+                    Swal.fire({
+                        title: 'Error!',
+                        text: msg,
+                        icon: 'error'
+                    })
+                }).catch(function(){
+                    // fallback: if something unexpected happens, queue it
+                    if (window.SibaloOffline && typeof window.SibaloOffline.submitAbsensi === 'function') {
+                        window.SibaloOffline.submitAbsensi({ image: image, lokasi: lokasi });
+                    }
+                });
+            } else {
+                // legacy fallback
+                $.ajax({
+                    type: 'POST',
+                    url: '/absensi/store',
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        image: image,
+                        lokasi: lokasi
+                    },
+                    cache: false,
+                    success: function(respond) {
+                        var status = respond.split("|");
+                        if (status[0] == "success") {
+                            if(status[2]=="in") {
+                                notifikasi_in.play();
+                            }else{
+                                notifikasi_out.play();
+                            }
+                            Swal.fire({
+                                title: 'Berhasil !',
+                                text: status[1],
+                                icon: 'success'
+                            })
+                            setTimeout("location.href='/home'", 3000);
+                        } else {
+                            if(status[2]=="radius") {
+                                radius_sound.play();
+                            }
+                            Swal.fire({
+                                title: 'Error!',
+                                text: status[1] || 'Maaf Gagal Absen,silahkan hubungi IT',
+                                icon: 'error'
+                            })
+                        }
+                    }
+                });
+            }
         });
     </script>
 
