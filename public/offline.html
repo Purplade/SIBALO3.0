@@ -11,7 +11,9 @@
       .card { background:#151515; border:1px solid #2a2a2a; border-radius: 14px; padding: 18px; }
       .title { font-size: 20px; font-weight: 700; margin: 0 0 8px; }
       .muted { color:#bdbdbd; line-height: 1.4; margin: 0 0 14px; }
-      .btn { display:inline-block; border-radius: 10px; padding: 10px 14px; background:#2b6cff; color:#fff; text-decoration:none; font-weight:600; }
+      .btnrow { display:flex; gap:10px; flex-wrap:wrap; }
+      .btn { display:inline-block; border-radius: 10px; padding: 10px 14px; background:#2b6cff; color:#fff; text-decoration:none; font-weight:600; border:0; cursor:pointer; }
+      .btn.secondary { background:#222; border:1px solid #333; }
       .pill { display:inline-block; margin-top:10px; padding:6px 10px; border:1px solid #333; border-radius: 999px; color:#cfcfcf; font-size: 12px; }
     </style>
   </head>
@@ -23,10 +25,26 @@
           Halaman ini belum tersedia karena koneksi internet terputus.
           Jika Anda sedang input absensi/izin, data akan disimpan dan diunggah otomatis saat online.
         </p>
-        <a class="btn" href="/home">Coba lagi</a>
-        <div class="pill">Offline mode</div>
+        <div class="btnrow">
+          <button class="btn" id="btn-retry" type="button">Coba lagi</button>
+          <button class="btn secondary" id="btn-offline" type="button">Mode offline</button>
+        </div>
+        <div class="pill">Tips: klik “Mode offline” untuk kembali ke halaman sebelumnya</div>
       </div>
     </div>
+    <script>
+      (function () {
+        const retry = document.getElementById('btn-retry');
+        const offline = document.getElementById('btn-offline');
+
+        if (retry) retry.addEventListener('click', () => window.location.reload());
+        if (offline) offline.addEventListener('click', () => {
+          // Prefer returning to the last page (often still usable for offline queue).
+          if (window.history && window.history.length > 1) return window.history.back();
+          window.location.href = '/home';
+        });
+      })();
+    </script>
   </body>
 </html>
 
