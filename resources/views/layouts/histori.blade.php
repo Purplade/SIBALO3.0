@@ -6,6 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -44,8 +45,9 @@
     <!-- Bootstrap-->
     <script src="{{ asset('assets/js/lib/popper.min.js') }}"></script>
     <script src="{{ asset('assets/js/lib/bootstrap.min.js') }}"></script>
-    <!-- Ionicons -->
-    <script type="module" src="https://unpkg.com/ionicons@5.0.0/dist/ionicons/ionicons.js"></script>
+    <!-- Ionicons (self-hosted to avoid tracking-prevention warnings) -->
+    <script type="module" src="{{ asset('vendor/ionicons/ionicons.esm.js') }}"></script>
+    <script nomodule src="{{ asset('vendor/ionicons/ionicons.js') }}"></script>
     <!-- Owl Carousel -->
     <script src="{{ asset('assets/js/plugins/owl-carousel/owl.carousel.min.js') }}"></script>
     <!-- jQuery Circle Progress -->

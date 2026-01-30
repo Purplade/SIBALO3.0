@@ -9,8 +9,7 @@
     <link href="{{ asset('dist/css/tabler.min.css?1674944402') }}" rel="stylesheet" />
     <link href="{{ asset('dist/css/tabler-vendors.min.css?1674944402') }}" rel="stylesheet" />
     <link href="{{ asset('dist/css/demo.min.css?1674944402') }}" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/css/datepicker.css" rel="stylesheet"
-        type="text/css" />
+    <link href="{{ asset('vendor/bootstrap-datepicker/datepicker.css') }}" rel="stylesheet" type="text/css" />
 </head>
 
 <body>
@@ -248,7 +247,7 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/js/bootstrap-datepicker.js"></script>
+    <script src="{{ asset('vendor/bootstrap-datepicker/bootstrap-datepicker.js') }}"></script>
     <script src="{{ asset('dist/js/tabler.min.js?1674944402') }}" defer></script>
     <script src="{{ asset('dist/js/demo.min.js?1674944402') }}" defer></script>
     <script>

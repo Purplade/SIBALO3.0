@@ -6,6 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -54,10 +55,10 @@
         }
     </style>
 
-    {{-- CSS PETA --}}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    {{-- CSS PETA (self-hosted to avoid tracking-prevention warnings) --}}
+    <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}" />
     <!-- SCRIPT PETA -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 
     {{-- KAMERA --}}
     <div class="row" style="margin-top:70px">
@@ -129,8 +130,9 @@
     <!-- Bootstrap-->
     <script src="{{ asset('assets/js/lib/popper.min.js') }}"></script>
     <script src="{{ asset('assets/js/lib/bootstrap.min.js') }}"></script>
-    <!-- Ionicons -->
-    <script type="module" src="https://unpkg.com/ionicons@5.0.0/dist/ionicons/ionicons.js"></script>
+    <!-- Ionicons (self-hosted to avoid tracking-prevention warnings) -->
+    <script type="module" src="{{ asset('vendor/ionicons/ionicons.esm.js') }}"></script>
+    <script nomodule src="{{ asset('vendor/ionicons/ionicons.js') }}"></script>
     <!-- Owl Carousel -->
     <script src="{{ asset('assets/js/plugins/owl-carousel/owl.carousel.min.js') }}"></script>
     <!-- jQuery Circle Progress -->
@@ -139,10 +141,10 @@
     <script src="{{ asset('assets/js/base.js') }}"></script>
     <script src="{{ asset('offline/idb.js') }}"></script>
     <script src="{{ asset('offline/offline-sync.js') }}"></script>
-    {{-- SCRIPT NOTIF --}}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- ///////////// SCRIPT KAMERA ////////////////////  -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.26/webcam.min.js"></script>
+    {{-- SCRIPT NOTIF (self-hosted) --}}
+    <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
+    <!-- ///////////// SCRIPT KAMERA (self-hosted) ////////////////////  -->
+    <script src="{{ asset('vendor/webcamjs/webcam.min.js') }}"></script>
     <script>
         var notifikasi_in = document.getElementById('notifikasi_in');
         var notifikasi_out = document.getElementById('notifikasi_out');
@@ -190,12 +192,15 @@
             var radius = parseFloat("{{ $lokasi_sklh->radius }}");
             var tilt = parseInt("{{ isset($lokasi_sklh->tilt) ? intval($lokasi_sklh->tilt) : 0 }}", 10) || 0;
 
-            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
-                maxZoom: 19,
-                maxNativeZoom: 19
-            });
-            satelliteLayer.addTo(map);
+            // Satellite tiles require internet; keep the map usable offline.
+            if (navigator.onLine) {
+                const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+                    maxZoom: 19,
+                    maxNativeZoom: 19
+                });
+                satelliteLayer.addTo(map);
+            }
 
             var marker = L.marker([position.coords.latitude, position.coords.longitude]).addTo(map);
 

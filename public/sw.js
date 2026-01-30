@@ -1,14 +1,42 @@
 /* Basic PWA service worker for SIBALO */
 importScripts('/offline/idb.js');
 
-const CACHE_NAME = 'sibalo-cache-v1';
+// Bump cache version when caching logic/assets change.
+const CACHE_NAME = 'sibalo-cache-v5';
 const OFFLINE_URL = '/offline.html';
+const OFFLINE_MODE_URL = '/offline-mode.html';
 const PRECACHE = [
   OFFLINE_URL,
+  OFFLINE_MODE_URL,
   '/manifest.webmanifest',
   '/assets/css/style.css',
+  '/assets/js/base.js',
+  '/assets/js/lib/jquery-3.4.1.min.js',
+  '/assets/js/lib/popper.min.js',
+  '/assets/js/lib/bootstrap.min.js',
+  '/offline/idb.js',
+  '/offline/offline-sync.js',
+  '/vendor/ionicons/ionicons.esm.js',
+  '/vendor/ionicons/ionicons.js',
+  '/vendor/sweetalert2/sweetalert2.all.min.js',
+  '/vendor/webcamjs/webcam.min.js',
+  '/vendor/leaflet/leaflet.css',
+  '/vendor/leaflet/leaflet.js',
+  '/vendor/leaflet/images/marker-icon.png',
+  '/vendor/leaflet/images/marker-icon-2x.png',
+  '/vendor/leaflet/images/marker-shadow.png',
+  '/vendor/leaflet/images/layers.png',
+  '/vendor/leaflet/images/layers-2x.png',
   '/assets/img/favicon.png',
   '/assets/img/icon/192x192.png'
+];
+
+// Pages that should be usable in offline mode (served from cache if available).
+// These are server-rendered HTML pages, so they need to be visited at least once while online.
+const OFFLINE_HTML_ALLOWLIST = [
+  '/absensi/selfie',
+  '/absensi/buatizin',
+  '/absensi/izin',
 ];
 
 self.addEventListener('install', (event) => {
@@ -30,6 +58,10 @@ function isNavigationRequest(request) {
     (request.method === 'GET' && request.headers.get('accept') && request.headers.get('accept').includes('text/html'));
 }
 
+function isAllowlistedHtmlPath(pathname) {
+  return OFFLINE_HTML_ALLOWLIST.some((p) => pathname === p || pathname.startsWith(p + '/'));
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -37,15 +69,35 @@ self.addEventListener('fetch', (event) => {
   // Only handle same-origin
   if (url.origin !== self.location.origin) return;
 
-  // Cache-first for static assets under /assets/
-  if (request.method === 'GET' && url.pathname.startsWith('/assets/')) {
+  // Stale-while-revalidate for static assets under /assets/, /vendor/, and /offline/
+  // This avoids "stuck" JS/CSS after updates (e.g., base.js).
+  if (request.method === 'GET' && (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/vendor/') || url.pathname.startsWith('/offline/'))) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       const cached = await cache.match(request);
-      if (cached) return cached;
-      const res = await fetch(request);
-      if (res.ok) cache.put(request, res.clone());
-      return res;
+
+      // Cache API doesn't support 206 Partial Content (Range requests).
+      // Also avoid caching any request that includes a Range header.
+      const isRangeRequest = request.headers && request.headers.has('range');
+
+      const fetchAndUpdate = fetch(request)
+        .then((res) => {
+          // Only cache full 200 responses (avoid 206 partial responses).
+          if (!isRangeRequest && res && res.ok && res.status === 200) {
+            cache.put(request, res.clone());
+          }
+          return res;
+        })
+        .catch(() => null);
+
+      // Return cached immediately, but refresh cache in background.
+      if (cached) {
+        event.waitUntil(fetchAndUpdate);
+        return cached;
+      }
+
+      const res = await fetchAndUpdate;
+      return res || Response.error();
     })());
     return;
   }
@@ -55,9 +107,21 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
       try {
         const res = await fetch(request);
+        // Cache allowlisted HTML pages for offline navigation.
+        if (res && res.ok && res.status === 200 && isAllowlistedHtmlPath(url.pathname)) {
+          const cache = await caches.open(CACHE_NAME);
+          // Cache by normalized path so querystrings won't break offline matches.
+          cache.put(new Request(url.pathname, { method: 'GET' }), res.clone());
+        }
         return res;
       } catch {
         const cache = await caches.open(CACHE_NAME);
+        // If this navigation is allowlisted, try serving cached HTML first.
+        if (isAllowlistedHtmlPath(url.pathname)) {
+          const cachedPage = await cache.match(url.pathname);
+          if (cachedPage) return cachedPage;
+        }
+        // Fallback to offline landing page.
         return (await cache.match(OFFLINE_URL)) || Response.error();
       }
     })());

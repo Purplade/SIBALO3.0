@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <title>SIBALO - Mode Offline</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background:#0b0b0b; color:#fff; }
+      .wrap { max-width: 720px; margin: 0 auto; padding: 28px 18px; }
+      .card { background:#151515; border:1px solid #2a2a2a; border-radius: 14px; padding: 18px; }
+      .title { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
+      .muted { color:#bdbdbd; line-height: 1.45; margin: 0 0 14px; }
+      .grid { display:grid; grid-template-columns: 1fr; gap: 12px; margin-top: 10px; }
+      @media (min-width: 640px) { .grid { grid-template-columns: 1fr 1fr; } }
+      .btn { display:block; width:100%; border-radius: 12px; padding: 14px 14px; background:#2b6cff; color:#fff; text-decoration:none; font-weight:700; border:0; cursor:pointer; text-align:center; }
+      .btn.secondary { background:#222; border:1px solid #333; }
+      .btn.gray { background:#1b1b1b; border:1px solid #2a2a2a; }
+      .row { display:flex; gap:10px; flex-wrap:wrap; }
+      .pill { display:inline-block; margin-top:10px; padding:6px 10px; border:1px solid #333; border-radius: 999px; color:#cfcfcf; font-size: 12px; }
+      .kv { display:flex; gap:10px; flex-wrap:wrap; margin-top: 10px; }
+      .kv > div { background:#111; border:1px solid #2a2a2a; border-radius: 12px; padding: 10px 12px; }
+      .kv strong { display:block; font-size: 14px; }
+      .kv span { color:#bdbdbd; font-size: 12px; }
+      .note { margin-top: 12px; font-size: 12px; color:#bdbdbd; }
+      .warn { color:#ffd28a; }
+      code { background:#111; padding:2px 6px; border:1px solid #2a2a2a; border-radius: 6px; }
+      .btn.small { padding: 10px 12px; font-size: 13px; border-radius: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1 class="title">Mode Offline</h1>
+        <p class="muted">
+          Anda bisa membuka menu inti dan melakukan input.
+          Jika internet sedang mati, data <strong>disimpan dulu</strong> dan akan <strong>diunggah otomatis</strong> saat online kembali.
+        </p>
+
+        <div class="kv">
+          <div>
+            <strong>Status koneksi</strong>
+            <span id="net-status">—</span>
+          </div>
+          <div>
+            <strong>Antrian tersimpan</strong>
+            <span id="queue-count">—</span>
+          </div>
+        </div>
+
+        <div class="kv" style="margin-top:12px;">
+          <div style="flex:1;">
+            <strong>Kesiapan halaman untuk offline</strong>
+            <span class="muted" style="display:block;margin-top:4px;">
+              Agar bisa dibuka saat offline, halaman harus pernah dibuka sekali saat online (agar tersimpan di cache).
+            </span>
+            <div class="note" style="margin-top:10px;">
+              <div id="page-status" class="muted">Memeriksa cache…</div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+              <button class="btn small secondary" id="btn-prepare" type="button">Siapkan halaman untuk offline</button>
+              <span class="muted" id="prepare-status" style="align-self:center;"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <a class="btn" href="/absensi/selfie">Selfie (Absensi)</a>
+          <a class="btn" href="/absensi/buatizin">Buat Izin/Sakit</a>
+        </div>
+
+        <div class="grid" style="margin-top:12px;">
+          <a class="btn gray" href="/absensi/izin">Daftar Izin/Sakit</a>
+          <button class="btn secondary" id="btn-sync" type="button">Coba sinkron sekarang</button>
+        </div>
+
+        <div class="pill">Catatan: halaman Selfie/Izin harus pernah dibuka saat online agar bisa terbuka saat offline</div>
+        <div class="note">
+          Jika tombol di atas mengarah kembali ke <code>/offline.html</code>, berarti halaman itu belum tersimpan di cache.
+          Sambungkan internet sebentar, buka halaman tersebut sekali, lalu bisa dipakai offline.
+          <span class="warn">(Peta satelit tidak tersedia saat offline, tapi GPS & foto tetap bisa.)</span>
+        </div>
+      </div>
+    </div>
+
+    <script src="/offline/idb.js"></script>
+    <script src="/offline/offline-sync.js"></script>
+    <script>
+      (function () {
+        const netEl = document.getElementById('net-status');
+        const qEl = document.getElementById('queue-count');
+        const statusEl = document.getElementById('page-status');
+        const btn = document.getElementById('btn-sync');
+        const btnPrepare = document.getElementById('btn-prepare');
+        const prepStatus = document.getElementById('prepare-status');
+
+        const pages = [
+          { key: 'Selfie', path: '/absensi/selfie' },
+          { key: 'Buat izin', path: '/absensi/buatizin' },
+          { key: 'Daftar izin', path: '/absensi/izin' },
+        ];
+
+        function renderNet() {
+          if (!netEl) return;
+          netEl.textContent = navigator.onLine ? 'Online' : 'Offline';
+        }
+
+        async function renderQueue() {
+          if (!qEl || !window.SibaloIDB) return;
+          try {
+            const items = await window.SibaloIDB.getAll();
+            qEl.textContent = String(items.length);
+          } catch {
+            qEl.textContent = '—';
+          }
+        }
+
+        async function renderCachedPages() {
+          if (!statusEl) return;
+          if (!('caches' in window)) {
+            statusEl.textContent = 'Cache Storage tidak didukung di browser ini.';
+            return;
+          }
+          try {
+            const results = [];
+            for (const p of pages) {
+              const res = await caches.match(p.path, { ignoreSearch: true });
+              results.push({ ...p, ready: !!res });
+            }
+
+            const readyCount = results.filter(r => r.ready).length;
+            const lines = [];
+            lines.push('<div><strong>' + readyCount + '</strong> dari <strong>' + results.length + '</strong> halaman siap dipakai offline.</div>');
+            lines.push('<div style="margin-top:8px; display:grid; gap:6px;">');
+            for (const r of results) {
+              const badge = r.ready
+                ? '<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#163a1f;border:1px solid #255a33;color:#a9f5bf;font-size:12px;font-weight:700;">Siap</span>'
+                : '<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#2a1b1b;border:1px solid #5a2b2b;color:#ffb6b6;font-size:12px;font-weight:700;">Belum</span>';
+              const hint = r.ready
+                ? '<span style="margin-left:8px;color:#bdbdbd;font-size:12px;">tersimpan</span>'
+                : '<span style="margin-left:8px;color:#bdbdbd;font-size:12px;">buka sekali saat online</span>';
+              lines.push('<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+                '<div style="display:flex;align-items:center;gap:10px;"><span style="font-weight:700;">' + r.key + '</span>' + badge + hint + '</div>' +
+                '<a href="' + r.path + '" style="color:#8ab4ff;text-decoration:none;font-size:12px;">Buka</a>' +
+              '</div>');
+            }
+            lines.push('</div>');
+            statusEl.innerHTML = lines.join('');
+          } catch {
+            statusEl.textContent = 'Gagal memeriksa cache.';
+          }
+        }
+
+        async function prepareOfflinePages() {
+          if (!prepStatus) return;
+          if (!navigator.onLine) {
+            prepStatus.textContent = 'Butuh internet untuk menyiapkan cache.';
+            return;
+          }
+          if (!('caches' in window)) {
+            prepStatus.textContent = 'Cache Storage tidak didukung.';
+            return;
+          }
+          prepStatus.textContent = 'Mengunduh halaman…';
+          try {
+            const cache = await caches.open('sibalo-cache-v5');
+            for (const p of pages) {
+              // Fetch HTML while online with cookies (auth session).
+              const res = await fetch(p.path, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'text/html' }
+              });
+              // Only cache successful HTML responses (avoid caching redirect/login pages).
+              const ct = (res.headers.get('content-type') || '').toLowerCase();
+              if (res.ok && res.status === 200 && ct.includes('text/html')) {
+                await cache.put(new Request(p.path, { method: 'GET' }), res.clone());
+              }
+            }
+            prepStatus.textContent = 'Selesai. Halaman siap dipakai offline.';
+            await renderCachedPages();
+          } catch {
+            prepStatus.textContent = 'Gagal menyiapkan cache.';
+          }
+        }
+
+        renderNet();
+        renderQueue();
+        renderCachedPages();
+
+        window.addEventListener('online', () => { renderNet(); renderQueue(); renderCachedPages(); });
+        window.addEventListener('offline', () => { renderNet(); });
+
+        if (btnPrepare) {
+          btnPrepare.addEventListener('click', prepareOfflinePages);
+        }
+
+        if (btn) {
+          btn.addEventListener('click', async () => {
+            if (window.SibaloOffline && typeof window.SibaloOffline.drainQueue === 'function') {
+              await window.SibaloOffline.drainQueue({ silent: false });
+              await renderQueue();
+            } else {
+              alert('Fitur sinkron belum siap.');
+            }
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>
+

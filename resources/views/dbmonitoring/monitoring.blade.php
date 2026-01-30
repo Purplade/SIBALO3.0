@@ -20,11 +20,10 @@
     <link href="{{ asset('dist/css/tabler-payments.min.css?1674944402') }}" rel="stylesheet" />
     <link href="{{ asset('dist/css/tabler-vendors.min.css?1674944402') }}" rel="stylesheet" />
     <link href="{{ asset('dist/css/demo.min.css?1674944402') }}" rel="stylesheet" />
-    {{-- CSS PETA --}}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    {{-- CSS PETA (self-hosted to avoid tracking-prevention warnings) --}}
+    <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}" />
     {{-- CSS DATE PICKER --}}
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/css/datepicker.css" rel="stylesheet"
-        type="text/css" />
+    <link href="{{ asset('vendor/bootstrap-datepicker/datepicker.css') }}" rel="stylesheet" type="text/css" />
 
     <style>
         @import url('https://rsms.me/inter/inter.css');
@@ -289,8 +288,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Script jQuery -->
 
-    {{-- SCRIPT TANGGAL ABSENSI --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/js/bootstrap-datepicker.js"></script>
+    {{-- SCRIPT TANGGAL ABSENSI (self-hosted) --}}
+    <script src="{{ asset('vendor/bootstrap-datepicker/bootstrap-datepicker.js') }}"></script>
 
     <!-- Libs JS -->
     <script src="{{ asset('dist/libs/apexcharts/dist/apexcharts.min.js?1674944402') }}" defer></script>
@@ -299,16 +298,16 @@
     <script src="{{ asset('dist/libs/jsvectormap/dist/maps/world-merc.js?1674944402') }}" defer></script>
     <!-- Libs JS -->
 
-    {{-- SCRIPT PETA --}}
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    {{-- SCRIPT PETA (self-hosted) --}}
+    <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 
     <!-- Tabler Core -->
     <script src="{{ asset('dist/js/tabler.min.js?1674944402') }}" defer></script>
     <script src="{{ asset('dist/js/demo.min.js?1674944402') }}" defer></script>
     <!-- Tabler Core -->
 
-    {{-- SCRIPT TANGGAL ABSENSI --}}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- SCRIPT TANGGAL ABSENSI (SweetAlert2 self-hosted) --}}
+    <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
     <script>
         $(function() {
             $("#dari, #sampai").datepicker({

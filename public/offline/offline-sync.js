@@ -157,22 +157,37 @@
   async function submitAbsensi({ image, lokasi }) {
     const client_uuid = (IDB && typeof IDB.uid === 'function') ? IDB.uid() : ('q_' + Date.now());
     const captured_at = new Date().toISOString();
+    const payload = { image, lokasi, _token: getCsrfToken(), client_uuid, captured_at };
+
+    // Offline OR network is unreliable: queue it, then auto-sync later.
     if (!navigator.onLine) {
       await enqueueRequest({
         url: '/absensi/store',
         method: 'POST',
         kind: 'absensi',
-        payload: { image, lokasi, _token: getCsrfToken(), client_uuid, captured_at, offline: 1 }
+        payload: { ...payload, offline: 1 }
       });
       toast('Disimpan offline', 'Absensi akan diupload otomatis saat online.', 'info');
       return { queued: true };
     }
 
-    const result = await postJson('/absensi/store', { image, lokasi, client_uuid, captured_at, offline: 0 });
-    if (result.ok && result.json && result.json.status === 'success') {
-      return { queued: false, ok: true, json: result.json };
+    try {
+      const result = await postJson('/absensi/store', { ...payload, offline: 0 });
+      if (result.ok && result.json && result.json.status === 'success') {
+        return { queued: false, ok: true, json: result.json };
+      }
+      return { queued: false, ok: false, json: result.json };
+    } catch (e) {
+      // fetch() can fail even when navigator.onLine === true (wifi captive portal, DNS issues, server down).
+      await enqueueRequest({
+        url: '/absensi/store',
+        method: 'POST',
+        kind: 'absensi',
+        payload: { ...payload, offline: 1 }
+      });
+      toast('Disimpan offline', 'Koneksi tidak stabil. Absensi diantrikan dan akan diupload saat online.', 'info');
+      return { queued: true };
     }
-    return { queued: false, ok: false, json: result.json };
   }
 
   async function enqueueForm(formEl) {

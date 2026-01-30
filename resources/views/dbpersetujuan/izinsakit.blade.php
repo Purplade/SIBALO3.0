@@ -22,7 +22,7 @@
     <link href="{{ asset('dist/css/demo.min.css?1674944402') }}" rel="stylesheet" />
 
     {{-- css flatpickr --}}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="{{ asset('vendor/flatpickr/flatpickr.min.css') }}">
     <style>
         @import url('https://rsms.me/inter/inter.css');
 
@@ -36,8 +36,8 @@
     </style>
 </head>
 
-{{-- js flatpickr --}}
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+{{-- js flatpickr (self-hosted to avoid tracking-prevention warnings) --}}
+<script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
 
 <body>
     <script src="{{ asset('dist/js/demo-theme.min.js?1674944402') }}"></script>

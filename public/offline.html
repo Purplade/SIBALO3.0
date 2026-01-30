@@ -29,7 +29,7 @@
           <button class="btn" id="btn-retry" type="button">Coba lagi</button>
           <button class="btn secondary" id="btn-offline" type="button">Mode offline</button>
         </div>
-        <div class="pill">Tips: klik “Mode offline” untuk kembali ke halaman sebelumnya</div>
+        <div class="pill">Tips: klik “Mode offline” untuk membuka menu offline</div>
       </div>
     </div>
     <script>
@@ -39,9 +39,8 @@
 
         if (retry) retry.addEventListener('click', () => window.location.reload());
         if (offline) offline.addEventListener('click', () => {
-          // Prefer returning to the last page (often still usable for offline queue).
-          if (window.history && window.history.length > 1) return window.history.back();
-          window.location.href = '/home';
+          // Go to offline dashboard (works even when fully offline).
+          window.location.href = '/offline-mode.html';
         });
       })();
     </script>

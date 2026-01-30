@@ -32,9 +32,8 @@
         }
     </style>
 
-    {{-- CSS PETA --}}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    {{-- CSS PETA --}}
+    {{-- CSS PETA (self-hosted to avoid tracking-prevention warnings) --}}
+    <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}" />
 </head>
 
 <body>
@@ -187,12 +186,8 @@
         }
     </style>
 
-    {{-- CSS PETA --}}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    {{-- CSS PETA --}}
-
-    {{-- SCRIPT PETA --}}
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    {{-- SCRIPT PETA (self-hosted) --}}
+    <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 
     <!-- Script jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"

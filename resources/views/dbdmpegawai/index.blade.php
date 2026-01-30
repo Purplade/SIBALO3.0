@@ -519,8 +519,8 @@
         {{-- JQUERY --}}
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"
             integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-        {{-- notif sweet alert --}}
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        {{-- notif sweet alert (self-hosted to avoid tracking-prevention warnings) --}}
+        <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
 
         {{-- FUNGSI TOMBOL TAMBAH PEGAWAI --}}
         <script>
