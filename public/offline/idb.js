@@ -1,7 +1,7 @@
 /* Minimal IndexedDB helper (no deps). Works in window + service worker (importScripts). */
 (function (global) {
   const DB_NAME = 'sibalo_offline_db';
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   const STORE = 'queue';
 
   function openDb() {
@@ -9,9 +9,17 @@
       const req = indexedDB.open(DB_NAME, DB_VERSION);
       req.onupgradeneeded = () => {
         const db = req.result;
+        let store;
         if (!db.objectStoreNames.contains(STORE)) {
-          const store = db.createObjectStore(STORE, { keyPath: 'id' });
+          store = db.createObjectStore(STORE, { keyPath: 'id' });
+        } else {
+          store = req.transaction.objectStore(STORE);
+        }
+        if (!store.indexNames.contains('createdAt')) {
           store.createIndex('createdAt', 'createdAt');
+        }
+        if (!store.indexNames.contains('kind')) {
+          store.createIndex('kind', 'kind');
         }
       };
       req.onsuccess = () => resolve(req.result);
@@ -59,6 +67,32 @@
     });
   }
 
+  async function getAllByKind(kind) {
+    return withStore('readonly', async (store) => {
+      try {
+        const idx = store.index('kind');
+        const all = await reqToPromise(idx.getAll(kind));
+        all.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        return all;
+      } catch {
+        // Fallback for older browsers / older DB schema
+        const all = await reqToPromise(store.getAll());
+        return all.filter((x) => x && x.kind === kind).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      }
+    });
+  }
+
+  async function count() {
+    return withStore('readonly', async (store) => {
+      try {
+        return await reqToPromise(store.count());
+      } catch {
+        const all = await reqToPromise(store.getAll());
+        return all.length;
+      }
+    });
+  }
+
   async function del(id) {
     return withStore('readwrite', (store) => reqToPromise(store.delete(id)));
   }
@@ -67,6 +101,6 @@
     return withStore('readwrite', (store) => reqToPromise(store.clear()));
   }
 
-  global.SibaloIDB = { DB_NAME, STORE, uid, put, getAll, del, clear };
+  global.SibaloIDB = { DB_NAME, STORE, uid, put, getAll, getAllByKind, count, del, clear };
 })(typeof self !== 'undefined' ? self : window);
 

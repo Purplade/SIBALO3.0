@@ -216,8 +216,10 @@ class AbsensiController extends Controller
     public function store(Request $request)
     {
         $nik = Auth::guard('pegawai')->user()->nik;
-        $tgl_absensi = date("Y-m-d");
-        $jam = date("H:i:s");
+        $capturedAt = $this->parseCapturedAt($request);
+        // Offline-first requirement: use original client timestamp when available
+        $tgl_absensi = $capturedAt ? $capturedAt->toDateString() : date("Y-m-d");
+        $jam = $capturedAt ? $capturedAt->format('H:i:s') : date("H:i:s");
 
         // Idempotency: if client_uuid already processed successfully, return success (prevents duplicate sync)
         $clientUuid = (string) $request->input('client_uuid');
@@ -240,8 +242,8 @@ class AbsensiController extends Controller
             }
         }
 
-        // Blokir absensi pada akhir pekan (Sabtu/Minggu)
-        $dayOfWeek = date('N'); // 1=Senin ... 7=Minggu
+        // Blokir absensi pada akhir pekan (Sabtu/Minggu) berdasarkan tanggal absensi (client captured_at bila ada)
+        $dayOfWeek = (int) date('N', strtotime($tgl_absensi)); // 1=Senin ... 7=Minggu
         if ($dayOfWeek >= 6) {
             return $this->respondAbsensi($request, 'error', 'Tidak dapat absen pada hari libur (Sabtu/Minggu)', 'weekend', null, 'unknown');
         }
@@ -573,6 +575,26 @@ class AbsensiController extends Controller
         $nik = Auth::guard('pegawai')->user()->nik;
         $status = $request->status;
         $keterangan = $request->keterangan;
+
+        // Idempotency: if client_uuid already processed successfully, return success (prevents duplicate sync)
+        $clientUuid = (string) $request->input('client_uuid');
+        if ($clientUuid !== '') {
+            $existing = DB::table('izin_events')
+                ->where('nik', $nik)
+                ->where('client_uuid', $clientUuid)
+                ->where('result_status', 'success')
+                ->orderByDesc('id')
+                ->first();
+            if ($existing) {
+                return $this->respondIzin(
+                    $request,
+                    'success',
+                    $existing->message ?: 'Pengajuan izin sudah tersimpan',
+                    200,
+                    $existing->pengajuan_id ? (int) $existing->pengajuan_id : null
+                );
+            }
+        }
 
         // Support both legacy single date and new date range
         $singleDate = $request->tgl_izin; // legacy

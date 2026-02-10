@@ -27,21 +27,18 @@
         </p>
         <div class="btnrow">
           <button class="btn" id="btn-retry" type="button">Coba lagi</button>
-          <button class="btn secondary" id="btn-offline" type="button">Mode offline</button>
+          <button class="btn secondary" id="btn-home" type="button">Ke Beranda</button>
         </div>
-        <div class="pill">Tips: klik “Mode offline” untuk membuka menu offline</div>
+        <div class="pill">Tips: jika beranda sudah pernah dibuka saat online, beranda bisa terbuka saat offline</div>
       </div>
     </div>
     <script>
       (function () {
         const retry = document.getElementById('btn-retry');
-        const offline = document.getElementById('btn-offline');
+        const home = document.getElementById('btn-home');
 
         if (retry) retry.addEventListener('click', () => window.location.reload());
-        if (offline) offline.addEventListener('click', () => {
-          // Go to offline dashboard (works even when fully offline).
-          window.location.href = '/offline-mode.html';
-        });
+        if (home) home.addEventListener('click', () => { window.location.href = '/home'; });
       })();
     </script>
   </body>

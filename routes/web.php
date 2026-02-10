@@ -6,9 +6,11 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LokasiController;
+use App\Http\Controllers\OfflineBulkSyncController;
 use App\Http\Controllers\PegawaiController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 // ROUTE ROOT: Arahkan sesuai guard yang sedang login
 Route::get('/', function () {
@@ -68,8 +70,19 @@ Route::middleware(['auth:pegawai'])->group(function () {
     Route::post('/absensi/storeizin', [AbsensiController::class, 'storeizin']);
     Route::post('/cekpengajuanizin', [AbsensiController::class, 'cekpengajuanizin']);
     Route::get('/absensi/{id}/batalkan', [AbsensiController::class, 'batalkanizin']);
+});
 
-    // ROUTE PROSES LOGOUT
+// OFFLINE-FIRST BULK SYNC API (cookie-session auth; CSRF disabled + same-origin marker middleware)
+Route::middleware(['auth:pegawai', \App\Http\Middleware\RequireSameOriginSync::class])
+    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->prefix('/api/offline-sync')
+    ->group(function () {
+        Route::post('/absensi/bulk', [OfflineBulkSyncController::class, 'absensiBulk']);
+        Route::post('/izin/bulk', [OfflineBulkSyncController::class, 'izinBulk']);
+    });
+
+// ROUTE PROSES LOGOUT
+Route::middleware(['auth:pegawai'])->group(function () {
     Route::get('/proseslogout', [AuthController::class, 'proseslogout']);
 });
 

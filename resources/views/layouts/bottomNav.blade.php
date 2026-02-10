@@ -20,10 +20,16 @@
             </div>
         </div>
     </a>
-    <a href="/absensi/izin" class="item {{ request()->is('absensi/izin') ? 'active' : '' }}">
+    <a href="/absensi/izin" class="item {{ request()->is('absensi/izin') ? 'active' : '' }}" style="position:relative;">
         <div class="col">
             <ion-icon name="calendar-outline"></ion-icon>
             <strong>Izin</strong>
+            <span
+                data-offline-queue-badge
+                class="badge bg-warning"
+                style="position:absolute; top:6px; right:18px; display:none; min-width:22px; text-align:center;"
+                title="Menunggu sinkronisasi"
+            >0</span>
         </div>
     </a>
     <a href="/profil" class="item {{ request()->is('profil') ? 'active' : '' }}">

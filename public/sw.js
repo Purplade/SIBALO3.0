@@ -2,12 +2,10 @@
 importScripts('/offline/idb.js');
 
 // Bump cache version when caching logic/assets change.
-const CACHE_NAME = 'sibalo-cache-v5';
+const CACHE_NAME = 'sibalo-cache-v6';
 const OFFLINE_URL = '/offline.html';
-const OFFLINE_MODE_URL = '/offline-mode.html';
 const PRECACHE = [
   OFFLINE_URL,
-  OFFLINE_MODE_URL,
   '/manifest.webmanifest',
   '/assets/css/style.css',
   '/assets/js/base.js',
@@ -31,14 +29,6 @@ const PRECACHE = [
   '/assets/img/icon/192x192.png'
 ];
 
-// Pages that should be usable in offline mode (served from cache if available).
-// These are server-rendered HTML pages, so they need to be visited at least once while online.
-const OFFLINE_HTML_ALLOWLIST = [
-  '/absensi/selfie',
-  '/absensi/buatizin',
-  '/absensi/izin',
-];
-
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting())
@@ -58,8 +48,17 @@ function isNavigationRequest(request) {
     (request.method === 'GET' && request.headers.get('accept') && request.headers.get('accept').includes('text/html'));
 }
 
-function isAllowlistedHtmlPath(pathname) {
-  return OFFLINE_HTML_ALLOWLIST.some((p) => pathname === p || pathname.startsWith(p + '/'));
+function isCacheableHtmlPath(pathname) {
+  // Avoid caching auth pages / logout / admin panel pages.
+  const deny = [
+    '/login',
+    '/panel',
+    '/dashboard',
+    '/proseslogout',
+    '/proseslogoutadmin',
+  ];
+  if (deny.some((p) => pathname === p || pathname.startsWith(p + '/'))) return false;
+  return true;
 }
 
 self.addEventListener('fetch', (event) => {
@@ -107,20 +106,20 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
       try {
         const res = await fetch(request);
-        // Cache allowlisted HTML pages for offline navigation.
-        if (res && res.ok && res.status === 200 && isAllowlistedHtmlPath(url.pathname)) {
+        // Cache-on-visit for server-rendered HTML (offline-first navigation).
+        // Only cache successful HTML responses (avoid caching redirects/login pages).
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (res && res.ok && res.status === 200 && ct.includes('text/html') && isCacheableHtmlPath(url.pathname)) {
           const cache = await caches.open(CACHE_NAME);
           // Cache by normalized path so querystrings won't break offline matches.
-          cache.put(new Request(url.pathname, { method: 'GET' }), res.clone());
+          await cache.put(new Request(url.pathname, { method: 'GET' }), res.clone());
         }
         return res;
       } catch {
         const cache = await caches.open(CACHE_NAME);
-        // If this navigation is allowlisted, try serving cached HTML first.
-        if (isAllowlistedHtmlPath(url.pathname)) {
-          const cachedPage = await cache.match(url.pathname);
-          if (cachedPage) return cachedPage;
-        }
+        // Try serving cached HTML first (if user has visited it before).
+        const cachedPage = await cache.match(url.pathname, { ignoreSearch: true });
+        if (cachedPage) return cachedPage;
         // Fallback to offline landing page.
         return (await cache.match(OFFLINE_URL)) || Response.error();
       }
@@ -137,6 +136,7 @@ async function postJson(url, data, csrf) {
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'X-SIBALO-SYNC': '1',
       ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
     },
     body: JSON.stringify(data),
@@ -145,44 +145,44 @@ async function postJson(url, data, csrf) {
   return { ok: res.ok, json };
 }
 
-async function postForm(url, formData, csrf) {
-  const res = await fetch(url, {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: {
-      'Accept': 'application/json',
-      ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
-    },
-    body: formData,
-  });
-  const json = await res.json().catch(() => null);
-  return { ok: res.ok, json };
-}
+const API_ABSENSI_BULK = '/api/offline-sync/absensi/bulk';
+const API_IZIN_BULK = '/api/offline-sync/izin/bulk';
 
 async function drainQueueInSW() {
-  // We can't easily access CSRF token in SW; rely on session + _token field for form submits.
-  // For absensi JSON, we send without CSRF header and expect app to accept it only if CSRF cookie works.
-  // If your CSRF setup requires header, main-thread sync will handle it.
   const IDB = self.SibaloIDB;
   if (!IDB) return;
   const items = await IDB.getAll();
-  for (const item of items) {
-    try {
-      if (item.kind === 'absensi') {
-        const r = await postJson(item.url, item.payload, null);
-        if (r.ok && r.json && r.json.status === 'success') await IDB.del(item.id);
-      } else if (item.kind === 'izin') {
-        const fd = new FormData();
-        for (const [k, v] of item.payload.fields || []) fd.append(k, v);
-        for (const f of item.payload.files || []) {
-          const file = new File([f.data], f.name, { type: f.type || 'application/octet-stream', lastModified: f.lastModified || Date.now() });
-          fd.append(f.fieldName || 'bukti_sakit', file);
-        }
-        const r = await postForm(item.url, fd, null);
-        if (r.ok && r.json && r.json.status === 'success') await IDB.del(item.id);
-      } else {
+  const absensiItems = items.filter((x) => x && x.kind === 'absensi');
+  const izinItems = items.filter((x) => x && x.kind === 'izin');
+
+  async function applyBulkResult(originalItems, json) {
+    const results = (json && Array.isArray(json.results)) ? json.results : [];
+    const okUuids = new Set(results.filter(r => r && r.status === 'success' && r.client_uuid).map(r => r.client_uuid));
+    for (const item of originalItems) {
+      const cu = item && item.payload ? item.payload.client_uuid : null;
+      if (cu && okUuids.has(cu)) {
         await IDB.del(item.id);
       }
+    }
+  }
+
+  // Absensi bulk
+  if (absensiItems.length) {
+    const csrf = absensiItems.find(x => x && x.csrf)?.csrf || null;
+    try {
+      const r = await postJson(API_ABSENSI_BULK, { _token: csrf, items: absensiItems.map(x => x.payload) }, null);
+      if (r.ok && r.json && r.json.status) await applyBulkResult(absensiItems, r.json);
+    } catch {
+      // ignore; will retry later
+    }
+  }
+
+  // Izin bulk
+  if (izinItems.length) {
+    const csrf = izinItems.find(x => x && x.csrf)?.csrf || null;
+    try {
+      const r = await postJson(API_IZIN_BULK, { _token: csrf, items: izinItems.map(x => x.payload) }, null);
+      if (r.ok && r.json && r.json.status) await applyBulkResult(izinItems, r.json);
     } catch {
       // ignore; will retry later
     }

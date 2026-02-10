@@ -7,6 +7,77 @@ if ('serviceWorker' in navigator) {
 }
 ///////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////
+// Auto-prefetch core offline pages (Absensi + Izin)
+// Goal: when user adds to home screen / first opens while online,
+// cache essential HTML so it can be opened offline without manual steps.
+(function () {
+    var CACHE_NAME = 'sibalo-cache-v6';
+    var PREFETCH_KEY = 'SibaloOfflinePrefetch:' + CACHE_NAME;
+    var pages = [
+        '/home',
+        '/absensi/selfie',
+        '/absensi/buatizin',
+        '/absensi/izin',
+        '/absensi/histori',
+        '/profil',
+    ];
+
+    function shouldSkip() {
+        try {
+            if (!('caches' in window)) return true;
+            if (!navigator.onLine) return true;
+            if (localStorage.getItem(PREFETCH_KEY) === '1') return true;
+            return false;
+        } catch (e) {
+            return true;
+        }
+    }
+
+    async function prefetchOnce() {
+        if (shouldSkip()) return;
+        try {
+            // Avoid running too early (before auth cookies/session ready).
+            if ('serviceWorker' in navigator) {
+                try { await navigator.serviceWorker.ready; } catch (e) {}
+            }
+
+            var cache = await caches.open(CACHE_NAME);
+            for (var i = 0; i < pages.length; i++) {
+                var path = pages[i];
+                // If already cached, skip.
+                var hit = await cache.match(path, { ignoreSearch: true });
+                if (hit) continue;
+
+                var res = await fetch(path, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'text/html' }
+                });
+                var ct = (res.headers.get('content-type') || '').toLowerCase();
+
+                // Skip caching redirects (e.g., to /login) or non-HTML responses.
+                if (!res.ok || res.status !== 200) continue;
+                if (res.redirected) continue;
+                if (res.url && (res.url.indexOf('/login') !== -1 || res.url.indexOf('/panel') !== -1)) continue;
+                if (ct.indexOf('text/html') === -1) continue;
+
+                await cache.put(new Request(path, { method: 'GET' }), res.clone());
+            }
+
+            localStorage.setItem(PREFETCH_KEY, '1');
+        } catch (e) {
+            // silent: prefetch is best-effort
+        }
+    }
+
+    // Run on first load (online), and also after app is installed / comes online.
+    window.addEventListener('load', function () { prefetchOnce(); });
+    window.addEventListener('online', function () { prefetchOnce(); });
+    window.addEventListener('appinstalled', function () { prefetchOnce(); });
+})();
+///////////////////////////////////////////////////////////////////////////
+
 
 ///////////////////////////////////////////////////////////////////////////
 // Page Loader with preload
