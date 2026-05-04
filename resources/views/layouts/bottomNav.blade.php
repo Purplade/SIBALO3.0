@@ -1,26 +1,26 @@
 <!-- BOTTOM NAVIGATION MENU -->
-<div class="appBottomMenu">
-    <a href="/home" class="item {{ request()->is('home') ? 'active' : '' }}">
+<div class="appBottomMenu" id="onboarding-pegawai-bottom-nav">
+    <a href="/home" id="onboarding-pegawai-nav-home" class="item {{ request()->is('home') ? 'active' : '' }}">
         <div class="col">
             <ion-icon name="home-outline" role="img" class="md hydrated" aria-label="file tray full outline"></ion-icon>
             <strong>Home</strong>
         </div>
     </a>
-    <a href="/absensi/histori" class="item {{ request()->is('absensi/histori') ? 'active' : '' }}">
+    <a href="/absensi/histori" id="onboarding-pegawai-nav-histori" class="item {{ request()->is('absensi/histori') ? 'active' : '' }}">
         <div class="col">
             <ion-icon name="document-text-outline" role="img" class="md hydrated"
                 aria-label="document text outline"></ion-icon>
             <strong>Histori</strong>
         </div>
     </a>
-    <a href="/absensi/selfie" class="item {{ request()->is('absensi/selfie') ? 'active' : '' }}">
+    <a href="/absensi/selfie" id="onboarding-pegawai-nav-selfie" class="item {{ request()->is('absensi/selfie') ? 'active' : '' }}">
         <div class="col">
             <div class="action-button large">
                 <ion-icon name="camera" role="img" class="md hydrated" aria-label="add outline"></ion-icon>
             </div>
         </div>
     </a>
-    <a href="/absensi/izin" class="item {{ request()->is('absensi/izin') ? 'active' : '' }}" style="position:relative;">
+    <a href="/absensi/izin" id="onboarding-pegawai-nav-izin" class="item {{ request()->is('absensi/izin') ? 'active' : '' }}" style="position:relative;">
         <div class="col">
             <ion-icon name="calendar-outline"></ion-icon>
             <strong>Izin</strong>
@@ -32,7 +32,7 @@
             >0</span>
         </div>
     </a>
-    <a href="/profil" class="item {{ request()->is('profil') ? 'active' : '' }}">
+    <a href="/profil" id="onboarding-pegawai-nav-profil" class="item {{ request()->is('profil') ? 'active' : '' }}">
         <div class="col">
             <ion-icon name="people-outline" role="img" class="md hydrated" aria-label="people outline"></ion-icon>
             <strong>Profil</strong>

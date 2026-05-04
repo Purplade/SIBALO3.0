@@ -245,7 +245,7 @@
         <div class="collapse navbar-collapse" id="sidebar-menu">
             <ul class="navbar-nav pt-lg-3">
                 <li class="nav-item">
-                    <a class="nav-link" href="/dashboard">
+                    <a class="nav-link" id="onboarding-admin-nav-home" href="/dashboard">
                         <span
                             class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler-icons.io/i/home -->
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
@@ -264,7 +264,7 @@
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle {{ request()->is(['pegawai', 'admin']) ? 'show' : '' }}"
-                        href="#" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button"
+                        id="onboarding-admin-nav-master" href="#" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button"
                         aria-expanded="{{ request()->is(['pegawai', 'admin']) ? 'true' : 'false' }}">
                         <span
                             class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler-icons.io/i/package -->
@@ -295,7 +295,7 @@
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->is(['monitoring']) ? 'active' : '' }}" href="/monitoring">
+                    <a class="nav-link {{ request()->is(['monitoring']) ? 'active' : '' }}" id="onboarding-admin-nav-monitoring" href="/monitoring">
                         <span
                             class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler-icons.io/i/home -->
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -320,7 +320,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->is(['monitoring/anomali']) ? 'active' : '' }}" href="/monitoring/anomali">
+                    <a class="nav-link {{ request()->is(['monitoring/anomali']) ? 'active' : '' }}" id="onboarding-admin-nav-anomali" href="/monitoring/anomali">
                         <span class="nav-link-icon d-md-none d-lg-inline-block">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -338,7 +338,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->is(['izinsakit']) ? 'active' : '' }}" href="/izinsakit">
+                    <a class="nav-link {{ request()->is(['izinsakit']) ? 'active' : '' }}" id="onboarding-admin-nav-izin" href="/izinsakit">
                         <span
                             class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler-icons.io/i/home -->
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -364,7 +364,7 @@
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle {{ request()->is(['laporanabsensi', 'rekap']) ? 'show' : '' }}"
-                        href="#" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button"
+                        id="onboarding-admin-nav-laporan" href="#" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button"
                         aria-expanded="{{ request()->is(['laporanabsensi', 'rekap']) ? 'true' : 'false' }}">
                         <span
                             class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler-icons.io/i/package -->
@@ -400,7 +400,7 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is(['konfigurasilokasi']) ? 'active' : '' }}"
-                        href="/konfigurasilokasi">
+                        id="onboarding-admin-nav-lokasi" href="/konfigurasilokasi">
                         <span
                             class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler-icons.io/i/home -->
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -423,7 +423,7 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is(['konfigurasijamabsensi']) ? 'active' : '' }}"
-                        href="/konfigurasijamabsensi">
+                        id="onboarding-admin-nav-jam" href="/konfigurasijamabsensi">
                         <span
                             class="nav-link-icon d-md-none d-lg-inline-block">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -462,3 +462,4 @@
         </div>
     </div>
 </aside>
+@include('partials.onboarding', ['onboardingRole' => 'admin'])

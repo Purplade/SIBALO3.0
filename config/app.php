@@ -69,6 +69,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Onboarding tutorial version
+    |--------------------------------------------------------------------------
+    |
+    | Bump this when you change tutorial steps so users see the tour again.
+    |
+    */
+
+    'onboarding_version' => env('APP_ONBOARDING_VERSION', '1'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

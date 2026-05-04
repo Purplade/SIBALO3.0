@@ -138,6 +138,9 @@
     
         <!-- BOTTOM NAVIGATION MENU -->
         @include('layouts.bottomNav')
+
+    @include('partials.onboarding', ['onboardingRole' => 'pegawai'])
+
 </body>
 
 </html>

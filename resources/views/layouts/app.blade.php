@@ -462,6 +462,8 @@
         });
     </script>
 
+    @include('partials.onboarding', ['onboardingRole' => 'pegawai'])
+
 </body>
 
 </html>

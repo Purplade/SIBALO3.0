@@ -353,6 +353,7 @@
         });
     </script>
 
+    @include('partials.onboarding', ['onboardingRole' => 'pegawai'])
 
 </body>
 
