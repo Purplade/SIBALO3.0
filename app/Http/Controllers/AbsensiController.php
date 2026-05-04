@@ -34,7 +34,9 @@ class AbsensiController extends Controller
             return null;
         }
         try {
-            return Carbon::parse($v);
+            // Client usually sends ISO-8601 in UTC (e.g. toISOString()).
+            // Normalize to app timezone so date/time validation stays consistent.
+            return Carbon::parse($v)->setTimezone(config('app.timezone'));
         } catch (\Throwable $e) {
             return null;
         }
@@ -174,7 +176,7 @@ class AbsensiController extends Controller
 
     public function selfie()
     {
-        $hariini = date("Y-m-d");
+        $hariini = now()->toDateString();
         $nik = Auth::guard('pegawai')->user()->nik;
 
         // Cek apakah sudah absen masuk hari ini
@@ -230,9 +232,10 @@ class AbsensiController extends Controller
     {
         $nik = Auth::guard('pegawai')->user()->nik;
         $capturedAt = $this->parseCapturedAt($request);
+        $now = now();
         // Offline-first requirement: use original client timestamp when available
-        $tgl_absensi = $capturedAt ? $capturedAt->toDateString() : date("Y-m-d");
-        $jam = $capturedAt ? $capturedAt->format('H:i:s') : date("H:i:s");
+        $tgl_absensi = $capturedAt ? $capturedAt->toDateString() : $now->toDateString();
+        $jam = $capturedAt ? $capturedAt->format('H:i:s') : $now->format('H:i:s');
 
         // Idempotency: if client_uuid already processed successfully, return success (prevents duplicate sync)
         $clientUuid = (string) $request->input('client_uuid');
