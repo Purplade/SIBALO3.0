@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LokasiController;
+use App\Http\Controllers\KonfigurasiJamAbsensiController;
 use App\Http\Controllers\OfflineBulkSyncController;
 use App\Http\Controllers\PegawaiController;
 use Illuminate\Support\Facades\Auth;
@@ -146,6 +147,8 @@ Route::middleware(['auth:user'])->group(function () {
     // ROUTE KONFIGURASI LOKASI
     Route::get('/konfigurasilokasi',[LokasiController::class, 'lokasisekolah']);
     Route::post('/updatelokasisekolah', [LokasiController::class, 'updatelokasisekolah']);
+    Route::get('/konfigurasijamabsensi', [KonfigurasiJamAbsensiController::class, 'index']);
+    Route::post('/konfigurasijamabsensi/update', [KonfigurasiJamAbsensiController::class, 'update']);
 
     //ROUTE PERSETUJUAN IZIN DAN SAKIT PEGAWAI
     Route::get('/izinsakit', [DashboardController::class, 'izinsakit']);
