@@ -14,6 +14,19 @@ use App\Services\HolidayService;
 
 class AbsensiController extends Controller
 {
+    private function getKonfigurasiJamAbsensi(): array
+    {
+        $defaultJamMasuk = '06:00:00';
+        $defaultJamPulang = '12:00:00';
+
+        $konfigurasi = DB::table('konfigurasi_jam_absensi')->orderBy('id')->first();
+
+        return [
+            'jam_masuk_mulai' => $konfigurasi->jam_masuk_mulai ?? $defaultJamMasuk,
+            'jam_pulang_mulai' => $konfigurasi->jam_pulang_mulai ?? $defaultJamPulang,
+        ];
+    }
+
     private function parseCapturedAt(Request $request): ?Carbon
     {
         $v = $request->input('captured_at');
@@ -313,9 +326,15 @@ class AbsensiController extends Controller
             ->whereNotNull('jam_out')
             ->count();
 
-        // Aturan: Absen masuk hanya bisa mulai pukul 06:00
-        if ($cek_masuk == 0 && $jam < '06:00:00') {
-            return $this->respondAbsensi($request, 'error', 'Absen masuk hanya diperbolehkan mulai pukul 06:00', 'time', null, 'in');
+        $konfigurasiJam = $this->getKonfigurasiJamAbsensi();
+        $jamMasukMulai = $konfigurasiJam['jam_masuk_mulai'];
+        $jamPulangMulai = $konfigurasiJam['jam_pulang_mulai'];
+        $jamMasukMulaiLabel = substr($jamMasukMulai, 0, 5);
+        $jamPulangMulaiLabel = substr($jamPulangMulai, 0, 5);
+
+        // Aturan: Absen masuk hanya bisa mulai sesuai konfigurasi admin
+        if ($cek_masuk == 0 && $jam < $jamMasukMulai) {
+            return $this->respondAbsensi($request, 'error', 'Absen masuk hanya diperbolehkan mulai pukul ' . $jamMasukMulaiLabel, 'time', null, 'in');
         }
 
         // Menambahkan Keterangan in pada file foto
@@ -328,16 +347,45 @@ class AbsensiController extends Controller
         // Generate nama file unik dengan timestamp
         $timestamp = time();
         $formatName = $nik . "-" . $tgl_absensi . "-" . $ket;
-        // Robustly strip data URI header if present and decode
-        $normalizedBase64 = preg_replace('/^data:image\/(png|jpe?g);base64,/i', '', $image);
-        if ($normalizedBase64 === null) {
+
+        // Decode data URI secara ketat untuk mencegah file gambar rusak/pecah
+        $imageFormat = 'jpeg';
+        $normalizedBase64 = $image;
+        if (preg_match('/^data:image\/(png|jpe?g);base64,(.*)$/is', $image, $matches)) {
+            $imageFormat = strtolower($matches[1]);
+            $normalizedBase64 = $matches[2];
+        }
+        if (!is_string($normalizedBase64) || trim($normalizedBase64) === '') {
             return $this->respondAbsensi($request, 'error', 'Format gambar tidak valid', 'in', null, 'unknown');
         }
-        $image_binary = base64_decode($normalizedBase64);
+
+        $image_binary = base64_decode($normalizedBase64, true);
         if ($image_binary === false) {
             return $this->respondAbsensi($request, 'error', 'Gagal decode gambar', 'in', null, 'unknown');
         }
-        $fileName = $formatName . '-' . $timestamp . ".png";
+
+        // Simpan hanya JPG agar konsisten di hosting (Hostinger/shared hosting)
+        if (function_exists('imagecreatefromstring') && function_exists('imagejpeg')) {
+            $gdImage = @imagecreatefromstring($image_binary);
+            if ($gdImage === false) {
+                return $this->respondAbsensi($request, 'error', 'Data gambar tidak valid', 'in', null, 'unknown');
+            }
+            ob_start();
+            imagejpeg($gdImage, null, 85);
+            $jpgBinary = ob_get_clean();
+            imagedestroy($gdImage);
+            if ($jpgBinary === false || $jpgBinary === '') {
+                return $this->respondAbsensi($request, 'error', 'Gagal memproses gambar JPG', 'in', null, 'unknown');
+            }
+            $image_binary = $jpgBinary;
+        } else {
+            // Fallback tanpa GD: hanya izinkan sumber JPEG agar isi file tetap valid saat disimpan sebagai .jpg
+            if (!in_array($imageFormat, ['jpg', 'jpeg'], true)) {
+                return $this->respondAbsensi($request, 'error', 'Server belum mendukung konversi PNG ke JPG. Gunakan format JPG/JPEG.', 'in', null, 'unknown');
+            }
+        }
+
+        $fileName = $formatName . '-' . $timestamp . ".jpg";
         $folderPath = "uploads/absensi/";
         $filePath = $folderPath . $fileName;
         // Ensure directory exists
@@ -347,9 +395,9 @@ class AbsensiController extends Controller
 
         // Jika sudah absen masuk tapi belum pulang, lakukan absen pulang
         if ($cek_masuk > 0 && $cek_pulang == 0) {
-            // Aturan: Absen pulang hanya bisa mulai pukul 12:00
-            if ($jam < '12:00:00') {
-                return $this->respondAbsensi($request, 'error', 'Absen pulang hanya diperbolehkan mulai pukul 12:00', 'time', null, 'out');
+            // Aturan: Absen pulang hanya bisa mulai sesuai konfigurasi admin
+            if ($jam < $jamPulangMulai) {
+                return $this->respondAbsensi($request, 'error', 'Absen pulang hanya diperbolehkan mulai pukul ' . $jamPulangMulaiLabel, 'time', null, 'out');
             }
             // Cari record absensi masuk hari ini
             $absensi = DB::table('absensi')
